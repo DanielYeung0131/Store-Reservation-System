@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { useDrag, useDrop, DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { getEmptyImage } from "react-dnd-html5-backend";
 
 export type Appointment = {
   id: string;
@@ -1075,6 +1074,8 @@ export default function DashboardPage() {
   };
 
   const Navbar = () => {
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
     return (
       <nav className="bg-blue-500 bg-opacity-30 shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
@@ -1082,13 +1083,14 @@ export default function DashboardPage() {
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center space-x-2">
                 <img src="favicon.ico" alt="" className="w-8 h-8" />
-                <h1 className="text-white text-xl font-bold">
+                <h1 className="text-white text-lg sm:text-xl font-bold">
                   Massage Scheduler
                 </h1>
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
+            {/* Desktop menu */}
+            <div className="hidden md:flex items-center space-x-4">
               <button className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
                 Appointments
               </button>
@@ -1102,7 +1104,58 @@ export default function DashboardPage() {
                 Reports
               </button>
             </div>
+
+            {/* Mobile menu button */}
+            <div className="md:hidden flex items-center">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="text-white hover:text-blue-200 p-2"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  {isMobileMenuOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
           </div>
+
+          {/* Mobile menu */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden">
+              <div className="px-2 pt-2 pb-3 space-y-1 bg-blue-500 bg-opacity-50">
+                <button className="text-white hover:text-blue-200 block px-3 py-2 rounded-md text-base font-medium w-full text-left">
+                  Appointments
+                </button>
+                <button className="text-white hover:text-blue-200 block px-3 py-2 rounded-md text-base font-medium w-full text-left">
+                  Customers
+                </button>
+                <button className="text-white hover:text-blue-200 block px-3 py-2 rounded-md text-base font-medium w-full text-left">
+                  Orders
+                </button>
+                <button className="text-white hover:text-blue-200 block px-3 py-2 rounded-md text-base font-medium w-full text-left">
+                  Reports
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
     );
@@ -1111,8 +1164,8 @@ export default function DashboardPage() {
   return (
     <DndProvider backend={HTML5Backend}>
       <Navbar />
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-4">
+      <div className="p-2 sm:p-6 min-w-full">
+        <div className="flex items-center justify-between mb-4 min-w-max">
           <button
             onClick={() => setShowForm(true)}
             className="px-3 py-1 bg-green-500 text-white rounded mr-4"
@@ -1215,7 +1268,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+        <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200 min-w-max">
           <p className="text-sm text-blue-800">
             <strong>Tip:</strong> Drag worker column headers to rearrange the
             order. Drag appointments to reschedule them to different workers or
@@ -1224,9 +1277,15 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-lg shadow border border-gray-200 bg-white relative">
+        <div
+          className="overflow-x-auto rounded-lg shadow border border-gray-200 bg-white relative"
+          style={{ minWidth: "800px" }}
+        >
           <CurrentTimeLine currentDate={currentDate} />
-          <table className="min-w-full border-separate border-spacing-0">
+          <table
+            className="w-full border-separate border-spacing-0"
+            style={{ minWidth: "800px" }}
+          >
             <thead>
               <tr>
                 <th className="sticky left-0 z-10 border-b bg-gray-50 p-3 w-20 text-right font-semibold text-gray-700"></th>

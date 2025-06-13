@@ -10,9 +10,12 @@
   },
   "dependencies": {
     "next": "15.3.3",
+    "rdndmb-html5-to-touch": "^9.0.0",
     "react": "^19.0.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
+    "react-dnd-multi-backend": "^9.0.0",
+    "react-dnd-touch-backend": "^16.0.1",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
