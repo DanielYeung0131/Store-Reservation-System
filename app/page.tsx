@@ -11,7 +11,10 @@ export type Appointment = {
   start: Date;
   end: Date;
   customer: string;
-  status: "booked" | "checked-in" | "finished"; // ADD THIS LINE
+  status: "booked" | "checked-in" | "finished";
+  notes?: string; // ADD THIS LINE
+  preference: "male" | "female" | "specific"; // ADD THIS LINE
+  specificWorker?: string; // ADD THIS LINE - for when preference is "specific"
 };
 
 let mockAppointments: Appointment[] = [
@@ -19,28 +22,34 @@ let mockAppointments: Appointment[] = [
     id: "1",
     massageType: "Swedish Massage",
     phone: "123-456-7890",
-    start: new Date(2025, 5, 12, 10, 0),
-    end: new Date(2025, 5, 12, 11, 30),
+    start: new Date(2025, 5, 13, 10, 0),
+    end: new Date(2025, 5, 13, 11, 30),
     customer: "Alice",
-    status: "booked", // ADD THIS
+    status: "booked",
+    notes: "First time client, prefers light pressure",
+    preference: "female", // ADD THIS
   },
   {
     id: "2",
     massageType: "Deep Tissue Massage",
     phone: "123-456-7890",
-    start: new Date(2025, 5, 12, 12, 0),
-    end: new Date(2025, 5, 12, 14, 0),
+    start: new Date(2025, 5, 13, 12, 0),
+    end: new Date(2025, 5, 13, 14, 0),
     customer: "Bob",
-    status: "checked-in", // ADD THIS
+    status: "checked-in",
+    notes: "Regular client, has lower back issues",
+    preference: "male", // ADD THIS
   },
   {
     id: "3",
     massageType: "Hot Stone Massage",
     phone: "123-456-7890",
-    start: new Date(2025, 5, 12, 9, 30),
-    end: new Date(2025, 5, 12, 10, 30),
+    start: new Date(2025, 5, 13, 9, 30),
+    end: new Date(2025, 5, 13, 10, 30),
     customer: "Carol",
-    status: "finished", // ADD THIS
+    status: "finished",
+    notes: "",
+    preference: "specific", // ADD THIS
   },
 ];
 
@@ -182,6 +191,9 @@ const QuickAddModal = ({
     date: "",
     start: "",
     end: "",
+    notes: "", // ADD THIS
+    preference: "female" as "male" | "female" | "specific",
+    specificWorker: "", // ADD THIS
   });
 
   React.useEffect(() => {
@@ -205,12 +217,17 @@ const QuickAddModal = ({
         date: prefilledData.date.toISOString().slice(0, 10),
         start: startTime,
         end: endTime,
+        notes: "", // ADD THIS
+        preference: "female", // ADD THIS
+        specificWorker: "", // ADD THIS LINE
       });
     }
   }, [prefilledData]);
 
   const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -228,6 +245,11 @@ const QuickAddModal = ({
       return;
     }
 
+    if (form.preference === "specific" && !form.specificWorker) {
+      alert("Please select a specific worker");
+      return;
+    }
+
     const startDate = new Date(`${form.date}T${form.start}`);
     const endDate = new Date(`${form.date}T${form.end}`);
 
@@ -238,7 +260,11 @@ const QuickAddModal = ({
       customer: form.customer,
       start: startDate,
       end: endDate,
-      status: "booked", // ADD THIS LINE
+      status: "booked",
+      notes: form.notes, // ADD THIS
+      preference: form.preference, // ADD THIS
+      specificWorker:
+        form.preference === "specific" ? form.specificWorker : undefined, // ADD THIS LINE
     };
     onSave(newAppointment);
     onClose();
@@ -305,6 +331,56 @@ const QuickAddModal = ({
               className="w-full border border-gray-300 rounded-md px-3 py-2"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes
+            </label>
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleFormChange}
+              placeholder="Special instructions or notes..."
+              className="w-full border border-gray-300 rounded-md px-3 py-2 h-20 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Massager Preference
+            </label>
+            <select
+              name="preference"
+              value={form.preference}
+              onChange={handleFormChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+            >
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="specific">Specific Massager</option>
+            </select>
+          </div>
+
+          {form.preference === "specific" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Choose Specific Worker
+              </label>
+              <select
+                name="specificWorker"
+                value={form.specificWorker}
+                onChange={handleFormChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+              >
+                <option value="">Select Specific Worker</option>
+                {workers.map((worker) => (
+                  <option key={worker} value={worker}>
+                    {worker}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -389,6 +465,9 @@ const AppointmentModal = ({
     date: "",
     start: "",
     end: "",
+    notes: "", // ADD THIS
+    preference: "female" as "male" | "female" | "specific", // ADD THIS
+    specificWorker: "", // ADD THIS LINE
   });
 
   React.useEffect(() => {
@@ -400,12 +479,17 @@ const AppointmentModal = ({
         date: appointment.start.toISOString().slice(0, 10),
         start: appointment.start.toTimeString().slice(0, 5),
         end: appointment.end.toTimeString().slice(0, 5),
+        notes: appointment.notes || "", // ADD THIS
+        preference: appointment.preference, // ADD THIS
+        specificWorker: appointment.specificWorker || "", // ADD THIS LINE
       });
     }
   }, [appointment]);
 
   const handleEditFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
@@ -425,6 +509,11 @@ const AppointmentModal = ({
       return;
     }
 
+    if (editForm.preference === "specific" && !editForm.specificWorker) {
+      alert("Please select a specific worker");
+      return;
+    }
+
     const startDate = new Date(`${editForm.date}T${editForm.start}`);
     const endDate = new Date(`${editForm.date}T${editForm.end}`);
 
@@ -435,6 +524,12 @@ const AppointmentModal = ({
       phone: editForm.phone,
       start: startDate,
       end: endDate,
+      notes: editForm.notes, // ADD THIS
+      preference: editForm.preference, // ADD THIS
+      specificWorker:
+        editForm.preference === "specific"
+          ? editForm.specificWorker
+          : undefined, // ADD THIS LINE
     };
 
     onSave(updatedAppointment);
@@ -509,6 +604,54 @@ const AppointmentModal = ({
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Notes
+            </label>
+            <textarea
+              name="notes"
+              value={editForm.notes}
+              onChange={handleEditFormChange}
+              placeholder="Special instructions or notes..."
+              className="w-full border border-gray-300 rounded-md px-3 py-2 h-20 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Massager Preference
+            </label>
+            <select
+              name="preference"
+              value={editForm.preference}
+              onChange={handleEditFormChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2"
+            >
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="specific">Specific Massager</option>
+            </select>
+          </div>
+          {editForm.preference === "specific" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Choose Specific Worker
+              </label>
+              <select
+                name="specificWorker"
+                value={editForm.specificWorker}
+                onChange={handleEditFormChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2"
+              >
+                <option value="">Select Specific Worker</option>
+                {workers.map((worker) => (
+                  <option key={worker} value={worker}>
+                    {worker}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Date
@@ -646,7 +789,7 @@ const DraggableAppointment = ({
     appointment.status === "checked-in" && now > appointment.end;
 
   let bgColor = "bg-blue-100 hover:bg-blue-200"; // default booked
-  let borderColor = "border-blue-500";
+  let borderColor = "border-blue-400";
 
   if (appointment.status === "checked-in") {
     if (isOverdue) {
@@ -659,6 +802,20 @@ const DraggableAppointment = ({
   } else if (appointment.status === "finished") {
     bgColor = "bg-gray-100 hover:bg-gray-200";
     borderColor = "border-gray-500";
+  }
+
+  if (appointment.status === "booked" && appointment.preference === "male") {
+    borderColor = "border-blue-800"; // dark blue
+  } else if (
+    appointment.status === "booked" &&
+    appointment.preference === "female"
+  ) {
+    borderColor = "border-pink-500"; // pink
+  } else if (
+    appointment.status === "booked" &&
+    appointment.preference === "specific"
+  ) {
+    borderColor = "border-yellow-300"; // light yellow
   }
 
   return (
@@ -691,6 +848,23 @@ const DraggableAppointment = ({
       <div className="text-xs font-medium capitalize">
         {appointment.status.replace("-", " ")}
       </div>
+      {/* ADD PREFERENCE INDICATOR */}
+      <div className="text-xs text-gray-500 capitalize">
+        {appointment.preference === "specific" && appointment.specificWorker
+          ? `Specific: ${appointment.specificWorker}`
+          : appointment.preference === "specific"
+          ? "Specific"
+          : appointment.preference}
+      </div>
+      {/* ADD NOTES IF PRESENT */}
+      {appointment.notes && (
+        <div
+          className="text-xs text-gray-500 truncate"
+          title={appointment.notes}
+        >
+          Note: {appointment.notes}
+        </div>
+      )}
     </div>
   );
 };
@@ -910,6 +1084,9 @@ export default function DashboardPage() {
     date: currentDate.toISOString().slice(0, 10),
     start: "09:00",
     end: "10:00",
+    notes: "", // ADD THIS
+    preference: "female" as "male" | "female" | "specific", // ADD THIS
+    specificWorker: "", // ADD THIS LINE
   });
 
   // Generate time slots for every 15 minutes from 9:00 to 21:45
@@ -921,7 +1098,9 @@ export default function DashboardPage() {
   }
 
   const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -939,6 +1118,11 @@ export default function DashboardPage() {
       return;
     }
 
+    if (form.preference === "specific" && !form.specificWorker) {
+      alert("Please select a specific worker");
+      return;
+    }
+
     const startDate = new Date(`${form.date}T${form.start}`);
     const endDate = new Date(`${form.date}T${form.end}`);
     const newAppointment: Appointment = {
@@ -948,7 +1132,11 @@ export default function DashboardPage() {
       customer: form.customer,
       start: startDate,
       end: endDate,
-      status: "booked", // ADD THIS LINE
+      status: "booked",
+      notes: form.notes, // ADD THIS
+      preference: form.preference, // ADD THIS
+      specificWorker:
+        form.preference === "specific" ? form.specificWorker : undefined, // ADD THIS LINE
     };
     setAppointments([...appointments, newAppointment]);
     setShowForm(false);
@@ -959,6 +1147,9 @@ export default function DashboardPage() {
       date: currentDate.toISOString().slice(0, 10),
       start: "09:00",
       end: "10:00",
+      notes: "", // ADD THIS
+      preference: "female", // ADD THIS
+      specificWorker: "", // ADD THIS LINE
     });
   };
 
@@ -1232,6 +1423,43 @@ export default function DashboardPage() {
               placeholder="Phone"
               className="border p-2 rounded"
             />
+
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleFormChange}
+              placeholder="Notes"
+              className="border p-2 rounded h-20 resize-none"
+            />
+
+            <select
+              name="preference"
+              value={form.preference}
+              onChange={handleFormChange}
+              className="border p-2 rounded"
+            >
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="specific">Specific</option>
+            </select>
+
+            {/* Add this after the preference select field in the main form */}
+            {form.preference === "specific" && (
+              <select
+                name="specificWorker"
+                value={form.specificWorker}
+                onChange={handleFormChange}
+                className="border p-2 rounded"
+              >
+                <option value="">Select Specific Worker</option>
+                {workers.map((worker) => (
+                  <option key={worker} value={worker}>
+                    {worker}
+                  </option>
+                ))}
+              </select>
+            )}
+
             <input
               type="date"
               name="date"
