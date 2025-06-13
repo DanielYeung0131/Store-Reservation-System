@@ -1268,12 +1268,15 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200 min-w-max">
+        <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200 w-full max-w-full">
           <p className="text-sm text-blue-800">
-            <strong>Tip:</strong> Drag worker column headers to rearrange the
-            order. Drag appointments to reschedule them to different workers or
-            time slots. Click on appointments to edit or delete them. Click on
-            empty cells to quickly add new appointments.
+            <strong>Tip:</strong>{" "}
+            <span>
+              Drag worker column headers to rearrange the order. Drag
+              appointments to reschedule them to different workers or time
+              slots. Click on appointments to edit or delete them. Click on
+              empty cells to quickly add new appointments.
+            </span>
           </p>
         </div>
 
