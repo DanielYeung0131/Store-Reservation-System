@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useDrag, useDrop, DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { getEmptyImage } from "react-dnd-html5-backend";
 
 export type Appointment = {
   id: string;
@@ -11,6 +12,7 @@ export type Appointment = {
   start: Date;
   end: Date;
   customer: string;
+  status: "booked" | "checked-in" | "finished"; // ADD THIS LINE
 };
 
 let mockAppointments: Appointment[] = [
@@ -19,26 +21,113 @@ let mockAppointments: Appointment[] = [
     massageType: "Swedish Massage",
     phone: "123-456-7890",
     start: new Date(2025, 5, 12, 10, 0),
-    end: new Date(2025, 5, 12, 11, 30), // 1.5 hour appointment
+    end: new Date(2025, 5, 12, 11, 30),
     customer: "Alice",
+    status: "booked", // ADD THIS
   },
   {
     id: "2",
     massageType: "Deep Tissue Massage",
     phone: "123-456-7890",
     start: new Date(2025, 5, 12, 12, 0),
-    end: new Date(2025, 5, 12, 14, 0), // 2 hour appointment
+    end: new Date(2025, 5, 12, 14, 0),
     customer: "Bob",
+    status: "checked-in", // ADD THIS
   },
   {
     id: "3",
     massageType: "Hot Stone Massage",
     phone: "123-456-7890",
     start: new Date(2025, 5, 12, 9, 30),
-    end: new Date(2025, 5, 12, 10, 30), // 1 hour appointment
+    end: new Date(2025, 5, 12, 10, 30),
     customer: "Carol",
+    status: "finished", // ADD THIS
   },
 ];
+
+const ContextMenu = ({
+  isOpen,
+  position,
+  appointment,
+  onClose,
+  onStatusChange,
+}: {
+  isOpen: boolean;
+  position: { x: number; y: number };
+  appointment: Appointment | null;
+  onClose: () => void;
+  onStatusChange: (
+    appointmentId: string,
+    status: "booked" | "checked-in" | "finished"
+  ) => void;
+}) => {
+  if (!isOpen || !appointment) return null;
+
+  const handleStatusChange = (status: "booked" | "checked-in" | "finished") => {
+    onStatusChange(appointment.id, status);
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed bg-white border border-gray-200 rounded-md shadow-lg z-50 py-1"
+      style={{ left: position.x, top: position.y }}
+    >
+      {appointment.status !== "checked-in" && (
+        <button
+          onClick={() => handleStatusChange("checked-in")}
+          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+        >
+          Check In
+        </button>
+      )}
+      {appointment.status === "checked-in" && (
+        <button
+          onClick={() => handleStatusChange("finished")}
+          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+        >
+          Check Out
+        </button>
+      )}
+      {appointment.status !== "booked" && (
+        <button
+          onClick={() => handleStatusChange("booked")}
+          className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+        >
+          Mark as Booked
+        </button>
+      )}
+    </div>
+  );
+};
+
+const CurrentTimeLine = ({ currentDate }: { currentDate: Date }) => {
+  const now = new Date();
+
+  // Only show if it's the current date
+  if (!isSameDay(now, currentDate)) return null;
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const startMinutes = 9 * 60; // 9:00 AM
+  const endMinutes = 22 * 60; // 10:00 PM
+
+  // Only show during business hours
+  if (currentMinutes < startMinutes || currentMinutes > endMinutes) return null;
+
+  const offsetMinutes = currentMinutes - startMinutes;
+  // Each 15-minute slot is 30px high, so 1 hour = 120px
+  // Each minute = 120/60 = 2px
+  const topPosition = offsetMinutes * 2;
+
+  return (
+    <div
+      className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
+      style={{ top: `${topPosition + 49}px` }} // +64px to account for header height
+    >
+      <div className="absolute -left-2 -top-2 w-4 h-4 bg-red-500 rounded-full"></div>
+    </div>
+  );
+};
 
 function isSameDay(a: Date, b: Date) {
   return (
@@ -54,7 +143,8 @@ function calculateDurationInHours(start: Date, end: Date): number {
 
 function getAppointmentHeight(appointment: Appointment): number {
   const duration = calculateDurationInHours(appointment.start, appointment.end);
-  return Math.max(duration * 80, 20); // 80px per hour, minimum 20px
+  // Each 15-minute slot is 20px, so 1 hour = 80px
+  return Math.max(duration * 120, 20); // 80px per hour, minimum 20px
 }
 
 function getAppointmentTop(
@@ -65,7 +155,8 @@ function getAppointmentTop(
     appointment.start.getHours() * 60 + appointment.start.getMinutes();
   const slotMinutes = timeSlot.hour * 60 + timeSlot.minute;
   const offsetMinutes = appointmentMinutes - slotMinutes;
-  return (offsetMinutes / 60) * 80; // 80px per hour
+  // Each minute is 80/60 = 1.333px (since 1 hour = 80px)
+  return (offsetMinutes / 60) * 120;
 }
 
 const QuickAddModal = ({
@@ -141,14 +232,15 @@ const QuickAddModal = ({
     const startDate = new Date(`${form.date}T${form.start}`);
     const endDate = new Date(`${form.date}T${form.end}`);
 
-    const newAppointment = {
+    const newAppointment: Appointment = {
+      id: Date.now().toString(),
+      phone: form.phone,
       massageType: form.massageType,
       customer: form.customer,
-      phone: form.phone,
       start: startDate,
       end: endDate,
+      status: "booked", // ADD THIS LINE
     };
-
     onSave(newAppointment);
     onClose();
   };
@@ -156,7 +248,7 @@ const QuickAddModal = ({
   if (!isOpen || !prefilledData) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed bottom-4 right-4 z-50 flex items-end justify-end">
       <div className="bg-white rounded-lg p-6 w-96 max-w-90vw max-h-90vh overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">Quick Add Appointment</h3>
@@ -361,7 +453,7 @@ const AppointmentModal = ({
   if (!isOpen || !appointment) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed bottom-4 right-4 z-50 flex items-end justify-end">
       <div className="bg-white rounded-lg p-6 w-96 max-w-90vw max-h-90vh overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">Edit Appointment</h3>
@@ -487,23 +579,42 @@ const AppointmentModal = ({
   );
 };
 
+// Replace the existing DraggableAppointment component with this updated version:
 const DraggableAppointment = ({
   appointment,
   isFirst,
   timeSlot,
   onAppointmentClick,
+  onContextMenu,
 }: {
   appointment: Appointment;
   isFirst: boolean;
   timeSlot: { hour: number; minute: number };
   onAppointmentClick: (appointment: Appointment) => void;
+  onContextMenu: (e: React.MouseEvent, appointment: Appointment) => void;
 }) => {
-  const [, dragRef] = useDrag({
+  const [, dragRef, preview] = useDrag({
     type: "APPOINTMENT",
     item: { appointment },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
   });
 
   const divRef = React.useRef<HTMLDivElement>(null);
+
+  // Set drag preview offset to drag from the top of the appointment
+  React.useEffect(() => {
+    if (divRef.current) {
+      const rect = divRef.current.getBoundingClientRect();
+      preview(divRef.current, {
+        anchorX: 0.5, // Center horizontally
+        anchorY: 0, // Top of the element
+        offsetX: 35,
+        offsetY: 10,
+      });
+    }
+  }, [preview]);
 
   React.useEffect(() => {
     if (divRef.current && isFirst) {
@@ -517,18 +628,46 @@ const DraggableAppointment = ({
     onAppointmentClick(appointment);
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onContextMenu(e, appointment);
+  };
+
   if (!isFirst) {
-    return null; // Only render the appointment in the first cell
+    return null;
   }
 
   const height = getAppointmentHeight(appointment);
   const top = getAppointmentTop(appointment, timeSlot);
 
+  // DETERMINE BACKGROUND COLOR BASED ON STATUS AND TIME
+  const now = new Date();
+  const isOverdue =
+    appointment.status === "checked-in" && now > appointment.end;
+
+  let bgColor = "bg-blue-100 hover:bg-blue-200"; // default booked
+  let borderColor = "border-blue-500";
+
+  if (appointment.status === "checked-in") {
+    if (isOverdue) {
+      bgColor = "bg-yellow-100 hover:bg-yellow-200";
+      borderColor = "border-yellow-500";
+    } else {
+      bgColor = "bg-green-100 hover:bg-green-200";
+      borderColor = "border-green-500";
+    }
+  } else if (appointment.status === "finished") {
+    bgColor = "bg-gray-100 hover:bg-gray-200";
+    borderColor = "border-gray-500";
+  }
+
   return (
     <div
       ref={divRef}
       onClick={handleClick}
-      className="absolute bg-blue-100 border-l-4 border-blue-500 p-2 rounded shadow text-sm cursor-pointer z-10 hover:bg-blue-200 transition-colors"
+      onContextMenu={handleContextMenu}
+      className={`absolute ${bgColor} border-l-4 ${borderColor} p-2 rounded shadow text-sm cursor-pointer z-10 transition-colors`}
       style={{
         top: `${top}px`,
         height: `${height}px`,
@@ -550,6 +689,9 @@ const DraggableAppointment = ({
         })}
       </div>
       <div className="text-gray-600 text-xs">{appointment.customer}</div>
+      <div className="text-xs font-medium capitalize">
+        {appointment.status.replace("-", " ")}
+      </div>
     </div>
   );
 };
@@ -610,6 +752,7 @@ const DroppableCell = ({
   appointmentsForCell,
   onAppointmentClick,
   onCellClick,
+  onContextMenu, // ADD THIS PROP
 }: {
   date: Date;
   timeSlot: { hour: number; minute: number };
@@ -627,6 +770,7 @@ const DroppableCell = ({
     date: Date,
     timeSlot: { hour: number; minute: number }
   ) => void;
+  onContextMenu: (e: React.MouseEvent, appointment: Appointment) => void; // ADD THIS
 }) => {
   const [, dropRef] = useDrop({
     accept: "APPOINTMENT",
@@ -644,7 +788,6 @@ const DroppableCell = ({
   }, [dropRef]);
 
   const handleCellClick = (e: React.MouseEvent) => {
-    // Only trigger cell click if we didn't click on an appointment
     if (appointmentsForCell.length === 0) {
       onCellClick(worker, date, timeSlot);
     }
@@ -654,7 +797,7 @@ const DroppableCell = ({
     <td
       ref={tdRef}
       className="border p-0 align-top relative cursor-pointer hover:bg-blue-50 transition-colors"
-      style={{ height: "20px" }}
+      style={{ height: "30px", minHeight: "30px" }} // Each 15-min slot = 20px
       onClick={handleCellClick}
     >
       {appointmentsForCell.map((appt, index) => {
@@ -670,6 +813,7 @@ const DroppableCell = ({
             isFirst={isFirst}
             timeSlot={timeSlot}
             onAppointmentClick={onAppointmentClick}
+            onContextMenu={onContextMenu} // ADD THIS
           />
         );
       })}
@@ -678,6 +822,67 @@ const DroppableCell = ({
 };
 
 export default function DashboardPage() {
+  // Add this to your DashboardPage component
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      // Force a re-render every minute to update the timeline
+      setCurrentDate(new Date(currentDate.getTime())); // This triggers re-render
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number };
+    appointment: Appointment | null;
+  }>({
+    isOpen: false,
+    position: { x: 0, y: 0 },
+    appointment: null,
+  });
+
+  // Add these handlers to the main component:
+  const handleContextMenu = (e: React.MouseEvent, appointment: Appointment) => {
+    e.preventDefault();
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY },
+      appointment,
+    });
+  };
+
+  const handleContextMenuClose = () => {
+    setContextMenu({
+      isOpen: false,
+      position: { x: 0, y: 0 },
+      appointment: null,
+    });
+  };
+
+  const handleStatusChange = (
+    appointmentId: string,
+    status: "booked" | "checked-in" | "finished"
+  ) => {
+    setAppointments((prev) =>
+      prev.map((appt) =>
+        appt.id === appointmentId ? { ...appt, status } : appt
+      )
+    );
+  };
+
+  // Add click outside handler
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.isOpen) {
+        handleContextMenuClose();
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [contextMenu.isOpen]);
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const [appointments, setAppointments] =
     useState<Appointment[]>(mockAppointments);
@@ -744,6 +949,7 @@ export default function DashboardPage() {
       customer: form.customer,
       start: startDate,
       end: endDate,
+      status: "booked", // ADD THIS LINE
     };
     setAppointments([...appointments, newAppointment]);
     setShowForm(false);
@@ -761,6 +967,7 @@ export default function DashboardPage() {
     const newAppointment: Appointment = {
       ...appointmentData,
       id: Date.now().toString(),
+      status: "booked", // ADD THIS LINE
     };
     setAppointments([...appointments, newAppointment]);
   };
@@ -869,7 +1076,7 @@ export default function DashboardPage() {
 
   const Navbar = () => {
     return (
-      <nav className="bg-blue-300 bg-opacity-30 shadow-lg">
+      <nav className="bg-blue-500 bg-opacity-30 shadow-lg">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -883,16 +1090,16 @@ export default function DashboardPage() {
 
             <div className="flex items-center space-x-4">
               <button className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
-                Dashboard
-              </button>
-              <button className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
                 Appointments
               </button>
               <button className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
-                Workers
+                Customers
               </button>
               <button className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
-                Settings
+                Orders
+              </button>
+              <button className="text-white hover:text-blue-200 px-3 py-2 rounded-md text-sm font-medium">
+                Reports
               </button>
             </div>
           </div>
@@ -1017,7 +1224,8 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="overflow-x-auto rounded-lg shadow border border-gray-200 bg-white">
+        <div className="overflow-x-auto rounded-lg shadow border border-gray-200 bg-white relative">
+          <CurrentTimeLine currentDate={currentDate} />
           <table className="min-w-full border-separate border-spacing-0">
             <thead>
               <tr>
@@ -1066,6 +1274,7 @@ export default function DashboardPage() {
                           appointmentsForCell={cellAppointments}
                           onAppointmentClick={handleAppointmentClick}
                           onCellClick={handleCellClick}
+                          onContextMenu={handleContextMenu} // ADD THIS LINE
                         />
                       );
                     })}
@@ -1093,6 +1302,13 @@ export default function DashboardPage() {
           prefilledData={quickAddData}
         />
       </div>
+      <ContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        appointment={contextMenu.appointment}
+        onClose={handleContextMenuClose}
+        onStatusChange={handleStatusChange}
+      />
     </DndProvider>
   );
 }
