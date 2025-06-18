@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
 
     let query = `
       SELECT 
+      id,
         massageType,
         phone,
         start,
@@ -41,7 +42,7 @@ export async function GET(request: NextRequest) {
       end: new Date(row.end),
     }));
 
-    console.log("Appointments fetched successfully:", appointments);
+    // console.log("Appointments fetched successfully:", appointments);
     return NextResponse.json(appointments);
   } catch (error) {
     console.error("Error fetching appointments:", error);
@@ -55,7 +56,9 @@ export async function GET(request: NextRequest) {
 // POST: Create new appointment
 export async function POST(request: NextRequest) {
   try {
-    const appointment: Omit<Appointment, "id"> = await request.json();
+    const appointment = await request.json();
+
+    console.log("Creating appointment:", appointment);
 
     const query = `
       INSERT INTO appointments (
@@ -63,6 +66,8 @@ export async function POST(request: NextRequest) {
         status, notes, preference, specificWorker
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
+
+    // console.log("Appointment created successfully:", appointment);
 
     const values = [
       appointment.massageType,
@@ -77,6 +82,8 @@ export async function POST(request: NextRequest) {
     ];
 
     await db.query(query, values);
+
+    // console.log("Appointment created successfully:", appointment);
 
     // No id to fetch, just return the appointment data
     const responseAppointment = {
@@ -98,25 +105,59 @@ export async function POST(request: NextRequest) {
 // PUT: Update existing appointment
 export async function PUT(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    // id is not used anymore
-    // const id = searchParams.get("id");
     const appointment: Appointment = await request.json();
 
-    // Remove id check
-    // if (!id) {
-    //   return NextResponse.json(
-    //     { message: "Appointment ID is required" },
-    //     { status: 400 }
-    //   );
-    // }
+    if (!appointment.id) {
+      return NextResponse.json(
+        { message: "Appointment ID is required for updates" },
+        { status: 400 }
+      );
+    }
 
-    // You need a way to identify which appointment to update if there's no id.
-    // If not possible, you may want to reject the request.
-    return NextResponse.json(
-      { message: "Cannot update appointment without an identifier" },
-      { status: 400 }
-    );
+    const query = `
+      UPDATE appointments
+      SET
+        massageType = ?,
+        phone = ?,
+        start = ?,
+        end = ?,
+        customer = ?,
+        status = ?,
+        notes = ?,
+        preference = ?,
+        specificWorker = ?
+      WHERE id = ?
+    `;
+
+    const values = [
+      appointment.massageType,
+      appointment.phone,
+      appointment.start,
+      appointment.end,
+      appointment.customer,
+      appointment.status,
+      appointment.notes || null,
+      appointment.preference,
+      appointment.specificWorker || null,
+      appointment.id,
+    ];
+
+    const [result]: any = await db.query(query, values);
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json(
+        { message: "No matching appointment found to update" },
+        { status: 404 }
+      );
+    }
+
+    const responseAppointment = {
+      ...appointment,
+      start: new Date(appointment.start),
+      end: new Date(appointment.end),
+    };
+
+    return NextResponse.json(responseAppointment, { status: 200 });
   } catch (error) {
     console.error("Error updating appointment:", error);
     return NextResponse.json(
@@ -129,28 +170,41 @@ export async function PUT(request: NextRequest) {
 // DELETE: Delete appointment by ID
 export async function DELETE(request: NextRequest) {
   try {
-    // id is not used anymore
-    // const { searchParams } = new URL(request.url);
-    // const id = searchParams.get("id");
+    const deleteItem = await request.json();
+    console.log("Received delete request for appointment:", deleteItem);
 
-    // Remove id check
-    // if (!id) {
-    //   return NextResponse.json(
-    //     { message: "Appointment ID is required" },
-    //     { status: 400 }
-    //   );
-    // }
+    const query = `
+      DELETE FROM appointments
+      WHERE
+        id = ?
+    `;
 
-    // You need a way to identify which appointment to delete if there's no id.
-    // If not possible, you may want to reject the request.
+    // Convert dates to ISO strings for consistent comparison
+    const values = [deleteItem.id];
+
+    const [result]: any = await db.query(query, values);
+
+    console.log("Delete result:", result);
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json(
+        { message: "No matching appointment found to delete" },
+        { status: 404 }
+      );
+    }
+
+    console.log("Successfully deleted appointment");
     return NextResponse.json(
-      { message: "Cannot delete appointment without an identifier" },
-      { status: 400 }
+      { message: "Appointment deleted successfully" },
+      { status: 200 }
     );
   } catch (error) {
     console.error("Error deleting appointment:", error);
     return NextResponse.json(
-      { message: "Error deleting appointment", error },
+      {
+        message: "Error deleting appointment",
+        error: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

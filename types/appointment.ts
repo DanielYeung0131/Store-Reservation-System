@@ -1,5 +1,5 @@
 export interface Appointment {
-  // Remove: id: string;
+  id: number;
   phone: string;
   massageType: string;
   customer: string;

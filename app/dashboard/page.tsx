@@ -7,9 +7,6 @@ import { Appointment } from "@/types/appointment";
 
 const fetchAppointments = async (date?: string) => {
   try {
-    // console.log("HERE fetching appointments for date:", date);
-
-    // Get previous date string in YYYY-MM-DD format
     let pDate = "";
     if (date) {
       const d = new Date(date);
@@ -34,13 +31,22 @@ const fetchAppointments = async (date?: string) => {
 };
 
 const createAppointment = async (appointment: Appointment) => {
-  // Remove Omit<Appointment, "id">
   try {
-    const prevDayStart = new Date(appointment.start);
-    prevDayStart.setDate(prevDayStart.getDate() - 1);
-    const prevDayEnd = new Date(appointment.end);
-    prevDayEnd.setDate(prevDayEnd.getDate() - 1);
+    const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+    const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000 * -1;
+
+    const prevDayStart = new Date(
+      new Date(appointment.start).getTime() -
+        24 * 60 * 60 * 1000 +
+        timezoneOffsetMs
+    );
+    const prevDayEnd = new Date(
+      new Date(appointment.end).getTime() -
+        24 * 60 * 60 * 1000 +
+        timezoneOffsetMs
+    );
     appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
+    console.log("HERE creating appointment:", appointment);
     const response = await fetch("/api/appointments", {
       method: "POST",
       headers: {
@@ -67,21 +73,17 @@ const createAppointment = async (appointment: Appointment) => {
 
 const updateAppointment = async (appointment: Appointment) => {
   try {
-    // Use composite key: phone + start time + customer for identification
-    const identifier = `${
-      appointment.phone
-    }-${appointment.start.toISOString()}-${appointment.customer}`;
+    if (!appointment.id) {
+      throw new Error("Appointment ID is required for updates");
+    }
 
-    const response = await fetch(
-      `/api/appointments/${encodeURIComponent(identifier)}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(appointment),
-      }
-    );
+    const response = await fetch(`/api/appointments`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(appointment),
+    });
 
     if (!response.ok) {
       throw new Error("Failed to update appointment");
@@ -100,19 +102,19 @@ const updateAppointment = async (appointment: Appointment) => {
 };
 
 const deleteAppointment = async (appointment: Appointment) => {
-  // Changed parameter
   try {
-    // Use composite key for identification
-    const identifier = `${
-      appointment.phone
-    }-${appointment.start.toISOString()}-${appointment.customer}`;
+    if (!appointment.id) {
+      throw new Error("Appointment ID is required for deletion");
+    }
 
-    const response = await fetch(
-      `/api/appointments/${encodeURIComponent(identifier)}`,
-      {
-        method: "DELETE",
-      }
-    );
+    console.log("HERE deleting appointment:", appointment);
+    const response = await fetch(`/api/appointments`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: appointment.id }),
+    });
 
     if (!response.ok) {
       throw new Error("Failed to delete appointment");
@@ -137,14 +139,14 @@ const ContextMenu = ({
   appointment: Appointment | null;
   onClose: () => void;
   onStatusChange: (
-    appointment: Appointment, // Changed from appointmentId: string
+    appointment: Appointment,
     status: "booked" | "checked-in" | "finished"
   ) => void;
 }) => {
   if (!isOpen || !appointment) return null;
 
   const handleStatusChange = (status: "booked" | "checked-in" | "finished") => {
-    onStatusChange(appointment, status); // Pass full appointment object
+    onStatusChange(appointment, status);
     onClose();
   };
 
@@ -184,25 +186,22 @@ const ContextMenu = ({
 const CurrentTimeLine = ({ currentDate }: { currentDate: Date }) => {
   const now = new Date();
 
-  // Only show if it's the current date
   if (!isSameDay(now, currentDate)) return null;
 
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const startMinutes = 9 * 60; // 9:00 AM
-  const endMinutes = 22 * 60; // 10:00 PM
+  const startMinutes = 9 * 60;
+  const endMinutes = 22 * 60;
 
-  // Only show during business hours
   if (currentMinutes < startMinutes || currentMinutes > endMinutes) return null;
 
   const offsetMinutes = currentMinutes - startMinutes;
-  // Each 15-minute slot is 30px high, so 1 hour = 120px
-  // Each minute = 120/60 = 2px
+
   const topPosition = offsetMinutes * 2;
 
   return (
     <div
       className="absolute left-0 right-0 border-t-2 border-red-500 z-20 pointer-events-none"
-      style={{ top: `${topPosition + 49}px` }} // +64px to account for header height
+      style={{ top: `${topPosition + 49}px` }}
     >
       <div className="absolute -left-2 -top-2 w-4 h-4 bg-red-500 rounded-full"></div>
     </div>
@@ -248,7 +247,7 @@ const QuickAddModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (appointment: Omit<Appointment, "id">) => void;
+  onSave: (appointment: Omit<Appointment, "id">) => void; // This is already correct
   workers: string[];
   prefilledData: {
     worker: string;
@@ -325,8 +324,8 @@ const QuickAddModal = ({
     const startDate = new Date(`${form.date}T${form.start}`);
     const endDate = new Date(`${form.date}T${form.end}`);
 
-    const newAppointment: Appointment = {
-      // Remove id generation
+    // Remove the id field since it's auto-generated
+    const newAppointment: Omit<Appointment, "id"> = {
       phone: form.phone,
       massageType: form.massageType,
       customer: form.customer,
@@ -527,7 +526,7 @@ const AppointmentModal = ({
   isOpen: boolean;
   onClose: () => void;
   onSave: (updatedAppointment: Appointment) => void;
-  onDelete: (appointment: Appointment) => void; // Changed from appointmentId: string
+  onDelete: (appointment: Appointment) => void; // This is correct
   workers: string[];
 }) => {
   const [editForm, setEditForm] = useState({
@@ -1053,7 +1052,10 @@ const DroppableCell = ({
 
         return (
           <DraggableAppointment
-            key={`${appt.phone}-${appt.start.getTime()}-${appt.customer}`} // Use composite key
+            key={
+              appt.id ||
+              `${appt.phone}-${appt.start.getTime()}-${appt.customer}`
+            } // Use id as primary key
             appointment={appt}
             isFirst={isFirst}
             timeSlot={timeSlot}
@@ -1106,7 +1108,7 @@ export default function DashboardPage() {
   };
 
   const handleStatusChange = async (
-    appointment: Appointment, // Changed parameter
+    appointment: Appointment,
     status: "booked" | "checked-in" | "finished"
   ) => {
     const updatedAppointment: Appointment = {
@@ -1118,11 +1120,7 @@ export default function DashboardPage() {
       const savedAppointment = await updateAppointment(updatedAppointment);
       setAppointments((prev) =>
         prev.map((appt) =>
-          appt.phone === savedAppointment.phone &&
-          appt.start.getTime() === savedAppointment.start.getTime() &&
-          appt.customer === savedAppointment.customer
-            ? savedAppointment
-            : appt
+          appt.id === savedAppointment.id ? savedAppointment : appt
         )
       );
     } catch (error) {
@@ -1232,8 +1230,7 @@ export default function DashboardPage() {
       const startDate = new Date(`${form.date}T${form.start}`);
       const endDate = new Date(`${form.date}T${form.end}`);
 
-      const appointmentData: Appointment = {
-        // Remove Omit<Appointment, "id">
+      const appointmentData: Omit<Appointment, "id"> = {
         phone: form.phone,
         massageType: form.massageType,
         customer: form.customer,
@@ -1246,8 +1243,16 @@ export default function DashboardPage() {
           form.preference === "specific" ? form.specificWorker : undefined,
       };
 
-      const newAppointment = await createAppointment(appointmentData);
-      setAppointments([...appointments, newAppointment]);
+      const newAppointment = await createAppointment(
+        appointmentData as Appointment
+      );
+      if (!newAppointment) {
+        alert("Failed to create appointment. Please try again.");
+      }
+      const updatedAppointments = await fetchAppointments(
+        currentDate.toISOString().split("T")[0]
+      );
+      setAppointments(updatedAppointments);
       setShowForm(false);
 
       // Reset form
@@ -1268,11 +1273,19 @@ export default function DashboardPage() {
   };
 
   const handleQuickAddSave = async (
-    appointmentData: Appointment // Remove Omit<Appointment, "id">
+    appointmentData: Omit<Appointment, "id">
   ) => {
     try {
-      const newAppointment = await createAppointment(appointmentData);
-      setAppointments([...appointments, newAppointment]);
+      const newAppointment = await createAppointment(
+        appointmentData as Appointment
+      );
+      if (!newAppointment) {
+        alert("Failed to create appointment. Please try again.");
+      }
+      const updatedAppointments = await fetchAppointments(
+        currentDate.toISOString().split("T")[0]
+      );
+      setAppointments(updatedAppointments);
     } catch (error) {
       alert("Failed to create appointment. Please try again.");
     }
@@ -1299,17 +1312,10 @@ export default function DashboardPage() {
     try {
       const savedAppointment = await updateAppointment(updatedAppointment);
       setAppointments((prev) =>
-        prev.map((a) =>
-          a.phone === savedAppointment.phone &&
-          a.start.getTime() === savedAppointment.start.getTime() &&
-          a.customer === savedAppointment.customer
-            ? savedAppointment
-            : a
-        )
+        prev.map((a) => (a.id === savedAppointment.id ? savedAppointment : a))
       );
     } catch (error) {
       alert("Failed to move appointment. Please try again.");
-      // Optionally refresh appointments to revert changes
     }
   };
 
@@ -1351,11 +1357,7 @@ export default function DashboardPage() {
       const savedAppointment = await updateAppointment(updatedAppointment);
       setAppointments((prev) =>
         prev.map((appt) =>
-          appt.phone === savedAppointment.phone &&
-          appt.start.getTime() === savedAppointment.start.getTime() &&
-          appt.customer === savedAppointment.customer
-            ? savedAppointment
-            : appt
+          appt.id === savedAppointment.id ? savedAppointment : appt
         )
       );
     } catch (error) {
@@ -1364,18 +1366,10 @@ export default function DashboardPage() {
   };
 
   const handleAppointmentDelete = async (appointment: Appointment) => {
-    // Changed parameter
     try {
-      await deleteAppointment(appointment); // Pass full appointment object
+      await deleteAppointment(appointment);
       setAppointments((prev) =>
-        prev.filter(
-          (appt) =>
-            !(
-              appt.phone === appointment.phone &&
-              appt.start.getTime() === appointment.start.getTime() &&
-              appt.customer === appointment.customer
-            )
-        )
+        prev.filter((appt) => appt.id !== appointment.id)
       );
     } catch (error) {
       alert("Failed to delete appointment. Please try again.");
