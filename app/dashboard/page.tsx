@@ -32,21 +32,21 @@ const fetchAppointments = async (date?: string) => {
 
 const createAppointment = async (appointment: Appointment) => {
   try {
-    const timezoneOffsetMinutes = new Date().getTimezoneOffset();
-    const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000 * -1;
+    // const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+    // const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000 * -1;
 
-    const prevDayStart = new Date(
-      new Date(appointment.start).getTime() -
-        24 * 60 * 60 * 1000 +
-        timezoneOffsetMs
-    );
-    const prevDayEnd = new Date(
-      new Date(appointment.end).getTime() -
-        24 * 60 * 60 * 1000 +
-        timezoneOffsetMs
-    );
-    appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
-    console.log("HERE creating appointment:", appointment);
+    // const prevDayStart = new Date(
+    //   new Date(appointment.start).getTime() -
+    //     24 * 60 * 60 * 1000 +
+    //     timezoneOffsetMs
+    // );
+    // const prevDayEnd = new Date(
+    //   new Date(appointment.end).getTime() -
+    //     24 * 60 * 60 * 1000 +
+    //     timezoneOffsetMs
+    // );
+    // appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
+    // console.log("HERE creating appointment:", appointment);
     const response = await fetch("/api/appointments", {
       method: "POST",
       headers: {
@@ -77,15 +77,15 @@ const updateAppointment = async (appointment: Appointment) => {
       throw new Error("Appointment ID is required for updates");
     }
 
-    const timezoneOffsetMinutes = new Date().getTimezoneOffset();
-    const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000 * -1;
-    const prevDayStart = new Date(
-      new Date(appointment.start).getTime() + timezoneOffsetMs
-    );
-    const prevDayEnd = new Date(
-      new Date(appointment.end).getTime() + timezoneOffsetMs
-    );
-    appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
+    // const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+    // const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000 * -1;
+    // const prevDayStart = new Date(
+    //   new Date(appointment.start).getTime() + timezoneOffsetMs
+    // );
+    // const prevDayEnd = new Date(
+    //   new Date(appointment.end).getTime() + timezoneOffsetMs
+    // );
+    // appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
 
     console.log("HERE updating appointment:", appointment);
     const response = await fetch(`/api/appointments`, {
