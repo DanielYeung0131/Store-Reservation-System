@@ -1080,7 +1080,8 @@ export default function DashboardPage() {
   React.useEffect(() => {
     const interval = setInterval(() => {
       // Force a re-render every minute to update the timeline
-      setCurrentDate(new Date(currentDate.getTime())); // This triggers re-render
+      // Adjust for local time zone by creating a new Date with the current local date/time
+      setCurrentDate(new Date());
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
