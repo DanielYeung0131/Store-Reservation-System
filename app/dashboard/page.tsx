@@ -16,6 +16,7 @@ const fetchAppointments = async (date?: string) => {
       // d.setDate(d.getDate());
       pDate = d.toISOString().split("T")[0];
     }
+    console.log("HERE fetching appointments for date:", pDate);
     const url = pDate ? `/api/appointments?date=${pDate}` : "/api/appointments";
     const response = await fetch(url);
     if (!response.ok) {
