@@ -12,7 +12,7 @@ const fetchAppointments = async (date?: string) => {
     let pDate = "";
     if (date) {
       const d = new Date(Date.now() - TexasTimeZoneOffset * 60 * 60 * 1000);
-      console.log("HERE date:", date);
+      console.log("HERE date:", d);
       // d.setDate(d.getDate());
       pDate = d.toISOString().split("T")[0];
     }
