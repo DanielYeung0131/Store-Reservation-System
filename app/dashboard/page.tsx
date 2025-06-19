@@ -77,6 +77,17 @@ const updateAppointment = async (appointment: Appointment) => {
       throw new Error("Appointment ID is required for updates");
     }
 
+    const timezoneOffsetMinutes = new Date().getTimezoneOffset();
+    const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000 * -1;
+    const prevDayStart = new Date(
+      new Date(appointment.start).getTime() + timezoneOffsetMs
+    );
+    const prevDayEnd = new Date(
+      new Date(appointment.end).getTime() + timezoneOffsetMs
+    );
+    appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
+
+    console.log("HERE updating appointment:", appointment);
     const response = await fetch(`/api/appointments`, {
       method: "PUT",
       headers: {
@@ -1117,12 +1128,11 @@ export default function DashboardPage() {
     };
 
     try {
-      const savedAppointment = await updateAppointment(updatedAppointment);
-      setAppointments((prev) =>
-        prev.map((appt) =>
-          appt.id === savedAppointment.id ? savedAppointment : appt
-        )
+      await updateAppointment(updatedAppointment);
+      const updatedAppointments = await fetchAppointments(
+        currentDate.toISOString().split("T")[0]
       );
+      setAppointments(updatedAppointments);
     } catch (error) {
       alert("Failed to update appointment status. Please try again.");
     }
@@ -1310,10 +1320,11 @@ export default function DashboardPage() {
     };
 
     try {
-      const savedAppointment = await updateAppointment(updatedAppointment);
-      setAppointments((prev) =>
-        prev.map((a) => (a.id === savedAppointment.id ? savedAppointment : a))
+      await updateAppointment(updatedAppointment);
+      const updatedAppointments = await fetchAppointments(
+        currentDate.toISOString().split("T")[0]
       );
+      setAppointments(updatedAppointments);
     } catch (error) {
       alert("Failed to move appointment. Please try again.");
     }
@@ -1354,12 +1365,11 @@ export default function DashboardPage() {
 
   const handleAppointmentSave = async (updatedAppointment: Appointment) => {
     try {
-      const savedAppointment = await updateAppointment(updatedAppointment);
-      setAppointments((prev) =>
-        prev.map((appt) =>
-          appt.id === savedAppointment.id ? savedAppointment : appt
-        )
+      await updateAppointment(updatedAppointment);
+      const updatedAppointments = await fetchAppointments(
+        currentDate.toISOString().split("T")[0]
       );
+      setAppointments(updatedAppointments);
     } catch (error) {
       alert("Failed to update appointment. Please try again.");
     }
