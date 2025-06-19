@@ -35,18 +35,14 @@ const createAppointment = async (appointment: Appointment) => {
     // const timezoneOffsetMinutes = new Date().getTimezoneOffset();
     // const timezoneOffsetMs = timezoneOffsetMinutes * 60 * 1000 * -1;
 
-    // const prevDayStart = new Date(
-    //   new Date(appointment.start).getTime() -
-    //     24 * 60 * 60 * 1000 +
-    //     timezoneOffsetMs
-    // );
-    // const prevDayEnd = new Date(
-    //   new Date(appointment.end).getTime() -
-    //     24 * 60 * 60 * 1000 +
-    //     timezoneOffsetMs
-    // );
-    // appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
-    // console.log("HERE creating appointment:", appointment);
+    const prevDayStart = new Date(
+      new Date(appointment.start).getTime() - 24 * 60 * 60 * 1000
+    );
+    const prevDayEnd = new Date(
+      new Date(appointment.end).getTime() - 24 * 60 * 60 * 1000
+    );
+    appointment = { ...appointment, start: prevDayStart, end: prevDayEnd };
+    console.log("HERE creating appointment:", appointment);
     const response = await fetch("/api/appointments", {
       method: "POST",
       headers: {

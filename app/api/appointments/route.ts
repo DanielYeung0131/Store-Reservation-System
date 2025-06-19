@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   try {
     const appointment = await request.json();
 
-    console.log("Creating appointment:", appointment);
+    // console.log("Creating appointment:", appointment);
 
     const query = `
       INSERT INTO appointments (
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    // console.log("Appointment created successfully:", appointment);
+    console.log("Appointment created successfully:", appointment);
 
     const values = [
       appointment.massageType,
