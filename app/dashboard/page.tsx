@@ -11,16 +11,13 @@ const fetchAppointments = async (date?: string) => {
   try {
     let pDate = "";
     if (date) {
-      const d = new Date(
-        new Date(date).getTime() +
-          new Date().getHours() * 60 * 60 * 1000 +
-          new Date().getMinutes() * 60 * 1000 +
-          new Date().getSeconds() * 1000 -
-          -TexasTimeZoneOffset * 60 * 60 * 1000
-      );
+      const d = new Date(date);
       console.log("HERE date:", d);
       // d.setDate(d.getDate());
       pDate = d.toISOString().split("T")[0];
+    } else {
+      const today = new Date();
+      pDate = today.toISOString().split("T")[0];
     }
     console.log("HERE fetching appointments for date:", pDate);
     const url = pDate ? `/api/appointments?date=${pDate}` : "/api/appointments";
