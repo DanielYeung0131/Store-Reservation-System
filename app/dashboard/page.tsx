@@ -10,7 +10,7 @@ const fetchAppointments = async (date?: string) => {
     let pDate = "";
     if (date) {
       const d = new Date(date);
-      d.setDate(d.getDate() - 1);
+      d.setDate(d.getDate());
       pDate = d.toISOString().split("T")[0];
     }
     const url = pDate ? `/api/appointments?date=${pDate}` : "/api/appointments";
@@ -1080,8 +1080,7 @@ export default function DashboardPage() {
   React.useEffect(() => {
     const interval = setInterval(() => {
       // Force a re-render every minute to update the timeline
-      // Adjust for local time zone by creating a new Date with the current local date/time
-      setCurrentDate(new Date());
+      setCurrentDate(new Date(Date.now() - 5 * 60 * 60 * 1000)); // Adjust for Texas timezone offset
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
