@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This web application was created by Daniel Yeung to provide an affordable alternative to existing store reservation systems. While many solutions on the market offer great features, they often come with a hefty price tag—some businesses in the local community reported paying as much as $400 per month. This project was developed to offer a more accessible option for small and medium-sized stores seeking a reliable and cost-effective reservation system.
 
 ## Getting Started
 
