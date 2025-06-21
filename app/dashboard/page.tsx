@@ -12,8 +12,8 @@ const fetchAppointments = async (date?: string) => {
     let pDate = "";
     if (date) {
       let d = new Date(date);
-      if (new Date().getHours() < 5) {
-        d = new Date(new Date(date).getTime() - 1); // Adjust for Texas timezone offset
+      if (d.getHours() < 5) {
+        d.setDate(d.getDate() - 1); // Adjust for Texas timezone offset
       }
       console.log("HERE date:", d);
       // d.setDate(d.getDate());
