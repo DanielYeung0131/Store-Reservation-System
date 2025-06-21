@@ -1086,10 +1086,8 @@ export default function DashboardPage() {
   // Add this to your DashboardPage component
   React.useEffect(() => {
     const interval = setInterval(() => {
-      // Force a re-render every minute to update the timeline
-      setCurrentDate(
-        new Date(Date.now() - TexasTimeZoneOffset * 60 * 60 * 1000)
-      ); // Adjust for Texas timezone offset
+      // Force a re-render every minute without changing the current date
+      setCurrentDate((prev) => new Date(prev));
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
@@ -1275,7 +1273,14 @@ export default function DashboardPage() {
         massageType: "",
         customer: "",
         phone: "",
-        date: currentDate.toISOString().slice(0, 10),
+        date:
+          new Date().getHours() + TexasTimeZoneOffset > 23
+            ? (() => {
+                const d = new Date();
+                d.setDate(d.getDate() - 1);
+                return d.toISOString().slice(0, 10);
+              })()
+            : currentDate.toISOString().slice(0, 10),
         start: "09:00",
         end: "10:00",
         notes: "",
